@@ -19,6 +19,8 @@
     "cms"
   ],
   "dependencies": {
+    "ali-oss": "^4.6.2",
+    "aliyun-sdk": "^1.9.9",
     "async": "^1.5.2",
     "bluebird": "^3.4.6",
     "body-parser": "^1.14.2",
