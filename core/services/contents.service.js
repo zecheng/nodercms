@@ -6,6 +6,7 @@ var moment = require('moment');
 var categories = require('../models/categories.model');
 var contentsModel = require('../models/contents.model');
 var mediaModel = require('../models/media.model');
+var cdnUrl = require('../../config/extensions.config').cdnUrl;
 
 /**
  * 单条内容
@@ -30,9 +31,9 @@ exports.one = function (options, callback) {
   contentsModel.findOne(query)
     .select('status category title alias user date reading thumbnail media abstract content tags extensions')
     .populate('category', 'name path')
-    .populate('thumbnail', 'fileName description date src')
+    .populate('thumbnail', 'fileName description date src fileOssName')
     .populate('user', 'nickname email')
-    .populate('media', 'fileName description date src')
+    .populate('media', 'fileName description date src fileOssName')
     .exec(function (err, content) {
       if (err) {
         err.type = 'database';
@@ -59,8 +60,8 @@ exports.one = function (options, callback) {
           }
         },
         function (reading, callback) {
-          if (content.thumbnail) var thumbnailSrc = content.thumbnail.src;
-          if (!_.isEmpty(content.media)) var meiaSrc = _.map(content.media, 'src');
+          if (content.thumbnail) var thumbnailSrc = content.thumbnail.fileOssName;
+          if (!_.isEmpty(content.media)) var meiaSrc = _.map(content.media, 'fileOssName');
 
           content = content.toObject();
           if (_.get(content, 'category.path')) content.url = content.category.path + '/' + content.alias;
@@ -68,7 +69,8 @@ exports.one = function (options, callback) {
           if (reading) content.reading = reading;
           if (content.content && !markdown) content.content = marked(content.content);
 
-          if (content.thumbnail) content.thumbnail.src = thumbnailSrc;
+          //缩略图 地址
+          if (content.thumbnail) content.thumbnail.src =  cdnUrl + thumbnailSrc;
           if (!_.isEmpty(content.media)) {
             _.forEach(content.media, function (medium, index) {
               medium.src = meiaSrc[index];
@@ -133,7 +135,7 @@ exports.list = function (options, callback) {
         .select('status category title alias user date reading thumbnail abstract')
         .populate('category', 'name path')
         .populate('user', 'nickname email')
-        .populate('thumbnail', 'fileName description date src')
+        .populate('thumbnail', 'fileName description date src fileOssName')
         .exec(function (err, contents) {
           if (err) {
             err.type = 'database';
@@ -141,18 +143,18 @@ exports.list = function (options, callback) {
           }
 
           contents = _.map(contents, function (content) {
-            if (content.thumbnail) var thumbnailSrc = content.thumbnail.src;
+
+            if (content.thumbnail) var thumbnailSrc = content.thumbnail.fileOssName;
 
             content = content.toObject();
             if (_.get(content, 'category.path')) content.url = content.category.path + '/' + content.alias;
 
-            if (content.thumbnail) content.thumbnail.src = thumbnailSrc;
+            if (content.thumbnail) content.thumbnail.src = cdnUrl + thumbnailSrc;
 
             delete content.alias;
 
             return content;
           });
-
           callback(null, count, contents);
         });
     }

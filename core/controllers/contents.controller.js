@@ -43,6 +43,7 @@ exports.one = function (req, res) {
   if (req.query.markdown === 'true') markdown = true;
 
   contentsService.one({_id: _id, reading: reading, markdown: markdown }, function (err, content) {
+
     if (err) {
       logger[err.type]().error(err);
       return res.status(500).end();

@@ -103,7 +103,6 @@ module.exports = {
     '/media': {
       get: [100400, 100100, 100200, 100300, 'media.list'],
       post: [100401, 100101, 100201, 100301, 'media.create'],
-
       '/:medium': {
         put: [100401, 100101, 100201, 100301, 'media.update'],
         delete: [100401, 100101, 100201, 100301, 'media.remove']
@@ -180,6 +179,10 @@ module.exports = {
     // 统计
     '/statistics': {
       put: 'statistics'
+    },
+    //AlyKey
+    '/aly':{
+      get: 'media.getKey',
     }
   },
 
@@ -208,5 +211,5 @@ module.exports = {
   '/:content*': { get: 'content' },
 
   // 错误页
-  '/*': { get: 'errors.notFound' }
+  '/*': { get: 'errors.notFound' },
 };

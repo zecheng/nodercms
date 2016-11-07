@@ -4,6 +4,7 @@ var async = require('async');
 var moment = require('moment');
 var logger = require('../../lib/logger.lib');
 var mediaService = require('../services/media.service');
+// var url = require('../../config/extensions.config').url;
 
 /**
  * 多条媒体
@@ -68,13 +69,11 @@ exports.create = function (req, res) {
     logger.system().error(__filename, '参数验证失败', req.validationErrors() );
     return res.status(400).end();
   }
-
   mediaService.save({ req: req }, function (err, medium) {
     if (err) {
       logger[err.type]().error(__filename, err);
       return res.status(500).end();
     }
-
     res.status(200).json(medium);
   });
 };
@@ -88,6 +87,7 @@ exports.create = function (req, res) {
  * @param {Object} res
  */
 exports.update = function (req, res) {
+
   req.checkParams({
     'medium': {
       notEmpty: {
@@ -106,7 +106,7 @@ exports.update = function (req, res) {
       isString: { errorMessage: 'fileName 需为字符串' }
     },
     'description': {
-      optional: true,
+      optional: [true],
       isString: { errorMessage: 'description 需为字符串' }
     }
   });
@@ -117,10 +117,19 @@ exports.update = function (req, res) {
   }
 
   var data = {
-    fileName: req.body.fileName
+    fileName: req.body.fileName,
   };
-
   if (req.body.description) data.description = req.body.description;
+  if (req.body.fileOssName) data.fileOssName = req.body.fileOssName;
+
+  data.fileOssPath = req.body.fileName;
+  data.src = req.body.fileName;
+
+  if(typeof req.body.fileOssUrl === 'undefined'){
+    data.fileOssPath =  req.body.fileOssName;
+    data.src =  req.body.fileOssName;
+  }
+
 
   mediaService.save({ _id: req.params.medium, data: data }, function (err) {
     if (err) {
@@ -164,4 +173,11 @@ exports.remove = function (req, res) {
 
     res.status(204).end();
   });
+};
+//获取Aly临时Key
+exports.getKey=function(req,res){
+                mediaService.alikey(function(v){
+                res.status(200).json(v);
+      });
+
 };

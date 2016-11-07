@@ -31,6 +31,21 @@ var mediaSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  // ALY Oss存文件名
+  fileOssName: {
+    type: String,
+    required: true
+  },
+  // ALY Oss 访问地址
+  fileOssPath: {
+    type: String,
+    required: true
+  },
+  //逻辑删除标识符 1正常 0 删除
+  isDelete: {
+    type: String,
+    required: true
+  },
 
   // 来源归属
   quotes: [mongoose.Schema.Types.ObjectId]
@@ -42,5 +57,4 @@ var mediaSchema = new mongoose.Schema({
 mediaSchema.virtual('src').get(function () {
   return '/media/' + moment(this.date).format('YYYYMM') + '/' + this._id + '/' + this.fileName;
 });
-
 module.exports = mongoose.model('Media', mediaSchema);

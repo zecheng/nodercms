@@ -189,9 +189,9 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
          */
         scope.uploadMedia = function (files) {
           if (!files) return false;
-
           _.map(files, function (file) {
             Upload.dataUrl(file).then(function (blob) {
+
               var fileNameLast = _.get(file.name.match(/^.+\.(\w+)$/), 1);
 
               var medium = {
@@ -205,7 +205,6 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
                 active: false,
                 edited: false
               };
-
               switch (fileNameLast) {
                 case 'jpg':
                 case 'jpeg':

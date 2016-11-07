@@ -13,7 +13,8 @@ var featuresModel = require('../models/features.model');
 var categoriesModel = require('../models/categories.model');
 var Canvas = require('canvas');
 var Image = Canvas.Image;
-
+var alyOss = require('../../lib/aly-oss.lib.js');
+var cdnUrl = require('../../config/extensions.config').cdnUrl;
 /**
  * 查询媒体
  * @param {Object} options
@@ -80,26 +81,23 @@ exports.list = function (options, callback) {
       });
     },
     function (count, callback) {
-      mediaModel.find({})
+      mediaModel.find({'isDelete':1})
         .sort('-date')
         .skip((currentPage - 1) * pageSize)
         .limit(pageSize)
-        .select('fileName description date size quotes src')
+        .select('fileName description date size quotes src fileOssName')
         .exec(function (err, media) {
           if (err) {
             err.type = 'database'
             return callback(err);
           }
-
           media = _.map(media, function (medium) {
-            var src = medium.src;
-
+            var src = cdnUrl + medium.fileOssName;
             medium = medium.toObject();
             medium.src = src;
 
             return medium;
           });
-
           callback(null, count, media);
         });
     }
@@ -122,6 +120,7 @@ exports.list = function (options, callback) {
  * @param {Function} callback
  */
 exports.save = function (options, callback) {
+
   if (options._id && !options.data) {
     var err = {
       type: 'system',
@@ -153,22 +152,23 @@ exports.save = function (options, callback) {
 
           callback(err, oldMedium);
         });
-      },
-      function (oldMedium, callback) {
-        if (data.fileName !== oldMedium.fileName) {
-          var prePath = '../../public/media/' + moment(oldMedium.date).format('YYYYMM') + '/' + oldMedium._id + '/';
-          var oldPath = path.join(__dirname, prePath + oldMedium.fileName);
-          var newPath = path.join(__dirname, prePath + data.fileName);
-
-          fs.rename(oldPath, newPath, function (err) {
-            if (err) err.type = 'system';
-
-            callback(err);
-          });
-        } else {
-          callback(null);
-        }
       }
+      // ,
+      // function (oldMedium, callback) {
+      //   if (data.fileName !== oldMedium.fileName) {
+      //     var prePath = '../../public/media/' + moment(oldMedium.date).format('YYYYMM') + '/' + oldMedium._id + '/';
+      //     var oldPath = path.join(__dirname, prePath + oldMedium.fileName);
+      //     var newPath = path.join(__dirname, prePath + data.fileName);
+      //
+      //     fs.rename(oldPath, newPath, function (err) {
+      //       if (err) err.type = 'system';
+      //
+      //       callback(err);
+      //     });
+      //   } else {
+      //     callback(null);
+      //   }
+      // }
     ], callback);
   } else {
     async.auto({
@@ -176,11 +176,10 @@ exports.save = function (options, callback) {
       formParse: function (callback) {
         var form = new formidable.IncomingForm();
         form.encoding = 'utf-8';
-        form.uploadDir = 'tmp';
+        // form.uploadDir = 'tmp';
         form.keepExtensions = false;
-        form.maxFieldsSize = 10 * 1024 * 1024; // 10MB
+        form.maxFieldsSize = 100 * 1024 * 1024; // 10MB
         form.multiples = false;
-
         form.parse(req, function (err, fields, data) {
           if (err) {
             err.type = 'system';
@@ -190,13 +189,45 @@ exports.save = function (options, callback) {
           callback(null, data.file);
         });
       },
+      // saveALY: ['formParse', function (callback, results) {
+      //   alyOss.multipartUpload(results.formParse.name,results.formParse.path,function(v){
+      //     results.formParse.fileossName = v.data.fileossName;
+      //     results.formParse.fileUrl = v.data.fileUrl;
+      //     callback(null,results);
+      //   });
+      // }],
+      //
+      //
+      // // 存储进数据库
+      // saveModel: ['saveALY', function (callback, results) {
+      //   var medium = {
+      //     type: results.formParse.type,
+      //     fileName: results.formParse.name,
+      //     date: results.formParse.lastModifiedDate,
+      //     size: results.formParse.size,
+      //     fileOssName:results.formParse.fileossName,
+      //     fileOssUrl:results.formParse.fileUrl,
+      //   };
+      //
+      //   new mediaModel(medium).save(function (err, medium) {
+      //     if (err) err.type = 'database';
+      //
+      //     callback(err, medium);
+      //   });
+      // }],
+
       // 存储进数据库
       saveModel: ['formParse', function (callback, results) {
+        var date = new Date();
+        fileOssName = 'sinaVr/' + date.getFullYear()+ '' + (date.getMonth()+1) + date.getDate() + '/'+results.formParse.name;
         var medium = {
           type: results.formParse.type,
           fileName: results.formParse.name,
           date: results.formParse.lastModifiedDate,
-          size: results.formParse.size
+          size: results.formParse.size,
+          fileOssName: fileOssName,
+          fileOssPath: fileOssName,
+          isDelete:1
         };
 
         new mediaModel(medium).save(function (err, medium) {
@@ -205,99 +236,101 @@ exports.save = function (options, callback) {
           callback(err, medium);
         });
       }],
+
       // 创建文件夹
-      mkdirFolder: ['saveModel', function (callback, results) {
-        var folder = '../../public/media/' + moment(results.saveModel.date).format('YYYYMM') + '/' + results.saveModel._id;
+      // mkdirFolder: ['saveModel', function (callback, results) {
+      //   var folder = '../../public/media/' + moment(results.saveModel.date).format('YYYYMM') + '/' + results.saveModel._id;
+      //
+      //   mkdirp(path.join(__dirname, folder), function (err) {
+      //     if (err) err.type = 'system';
+      //
+      //     callback(null, folder);
+      //   });
+      // }],
+      // // 移动文件或者压缩图片并移动文件
+      // moveFileOrCompressImage: ['formParse', 'saveModel', 'mkdirFolder', function (callback, results) {
+      //   var regex = /^image\/(jpeg|png)$/;
+      //   var isJpgAndPng = regex.test(results.saveModel.type);
+      //
+      //   if (isJpgAndPng) {
+      //     var aftName = _.get(results.saveModel.type.match(regex), '[1]');
+      //
+      //     async.waterfall([
+      //       function (callback) {
+      //         fs.readFile(path.join(__dirname, '../../' + results.formParse.path), function (err, file) {
+      //           if (!file) {
+      //             var err = {
+      //               type: 'system',
+      //               error: '没有找到' + path.join(__dirname, '../../' + results.formParse.path)
+      //             };
+      //             return callback(err);
+      //           }
+      //
+      //           callback(null, file);
+      //         });
+      //       },
+      //       function (file, callback) {
+      //         var image = new Image;
+      //         image.src = file;
+      //
+      //         var width = image.width;
+      //         var height = image.height;
+      //
+      //         var canvas = new Canvas(width, height);
+      //         var ctx = canvas.getContext('2d');
+      //         ctx.drawImage(image, 0, 0, width, height);
+      //
+      //         var out = fs.createWriteStream(path.join(__dirname, results.mkdirFolder + '/' + results.saveModel.fileName));
+      //
+      //         var stream;
+      //
+      //         switch (aftName) {
+      //           case 'jpg':
+      //           case 'jpeg':
+      //             stream = canvas.jpegStream();
+      //             break;
+      //           case 'png':
+      //             stream = canvas.pngStream();
+      //         }
+      //
+      //         stream.on('data', function (chunk) {
+      //           out.write(chunk);
+      //         });
+      //         stream.on('end', function () {
+      //           callback();
+      //         });
+      //       },
+      //       function (callback) {
+      //         fs.unlink(path.join(__dirname, '../../' + results.formParse.path), function (err) {
+      //           callback(err);
+      //         });
+      //       }
+      //     ], function (err) {
+      //       if (err) {
+      //         err.type = 'system';
+      //         return callback(err);
+      //       }
+      //
+      //       callback();
+      //     });
+      //   } else {
+      //     fs.rename(path.join(__dirname, '../../' + results.formParse.path), path.join(__dirname, results.mkdirFolder + '/' + results.saveModel.fileName), function (err) {
+      //       if (err) {
+      //         err.type = 'system';
+      //         return callback(err);
+      //       }
+      //
+      //       callback(null);
+      //     });
+      //   }
+      // }],
 
-        mkdirp(path.join(__dirname, folder), function (err) {
-          if (err) err.type = 'system';
-
-          callback(null, folder);
-        });
-      }],
-      // 移动文件或者压缩图片并移动文件
-      moveFileOrCompressImage: ['formParse', 'saveModel', 'mkdirFolder', function (callback, results) {
-        var regex = /^image\/(jpeg|png)$/;
-        var isJpgAndPng = regex.test(results.saveModel.type);
-
-        if (isJpgAndPng) {
-          var aftName = _.get(results.saveModel.type.match(regex), '[1]');
-
-          async.waterfall([
-            function (callback) {
-              fs.readFile(path.join(__dirname, '../../' + results.formParse.path), function (err, file) {
-                if (!file) {
-                  var err = {
-                    type: 'system',
-                    error: '没有找到' + path.join(__dirname, '../../' + results.formParse.path)
-                  };
-                  return callback(err);
-                }
-
-                callback(null, file);
-              });
-            },
-            function (file, callback) {
-              var image = new Image;
-              image.src = file;
-
-              var width = image.width;
-              var height = image.height;
-
-              var canvas = new Canvas(width, height);
-              var ctx = canvas.getContext('2d');
-              ctx.drawImage(image, 0, 0, width, height);
-
-              var out = fs.createWriteStream(path.join(__dirname, results.mkdirFolder + '/' + results.saveModel.fileName));
-
-              var stream;
-
-              switch (aftName) {
-                case 'jpg':
-                case 'jpeg':
-                  stream = canvas.jpegStream();
-                  break;
-                case 'png':
-                  stream = canvas.pngStream();
-              }
-
-              stream.on('data', function (chunk) {
-                out.write(chunk);
-              });
-              stream.on('end', function () {
-                callback();
-              });
-            },
-            function (callback) {
-              fs.unlink(path.join(__dirname, '../../' + results.formParse.path), function (err) {
-                callback(err);
-              });
-            }
-          ], function (err) {
-            if (err) {
-              err.type = 'system';
-              return callback(err);
-            }
-
-            callback();
-          });
-        } else {
-          fs.rename(path.join(__dirname, '../../' + results.formParse.path), path.join(__dirname, results.mkdirFolder + '/' + results.saveModel.fileName), function (err) {
-            if (err) {
-              err.type = 'system';
-              return callback(err);
-            }
-
-            callback(null);
-          });
-        }
-      }]
     }, function (err, results) {
       if (err) return callback(err);
-
       var medium = {
         _id: results.saveModel._id,
-        src: results.saveModel.src
+        // src: results.saveModel.src
+        src: results.formParse.fileUrl,
       };
 
       callback(null, medium);
@@ -369,21 +402,23 @@ exports.remove = function (options, callback) {
           });
         },
         removeMedium: function (callback) {
-          mediaModel.findByIdAndRemove(_id, function (err, oldMedium) {
+          var data = {'isDelete':0};
+          mediaModel.findByIdAndUpdate({ _id: _id }, data, { runValidators: true }, function (err, oldMedium) {
             if (err) err.type = 'database';
 
             callback(err, oldMedium);
           });
+
         },
-        unlinkFile: ['removeMedium', function (callback, results) {
-          var fileFolder = '../../public/media/' + moment(results.removeMedium.date).format('YYYYMM') + '/' + results.removeMedium._id;
-
-          rimraf(path.join(__dirname, fileFolder), function (err) {
-            if (err) err.type = 'system';
-
-            callback(err);
-          });
-        }]
+        // unlinkFile: ['removeMedium', function (callback, results) {
+        //   var fileFolder = '../../public/media/' + moment(results.removeMedium.date).format('YYYYMM') + '/' + results.removeMedium._id;
+        //
+        //   rimraf(path.join(__dirname, fileFolder), function (err) {
+        //     if (err) err.type = 'system';
+        //
+        //     callback(err);
+        //   });
+        // }]
       }, function (err) {
         if (err) return callback(err);
 
@@ -402,7 +437,13 @@ exports.total = function (callback) {
       err.type = 'database';
       return callback(err);
     }
-
     callback(null, count);
   });
 };
+
+//AliKey
+exports.alikey = function(callback){
+     alyOss.getAlySdk(function(v){
+       return  callback(v);
+  });
+}
