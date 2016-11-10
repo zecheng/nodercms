@@ -2135,11 +2135,11 @@ angular.module("nodercms", ["ngAnimate", "ipCookie", "ui.router", "ngFileUpload"
                         var  callUrl = '';
                         $.get('/api/aly',function(data){
                             var client = new OSS.Wrapper({
-                                region: 'oss-cn-beijing',
+                                region: data.region,
                                 accessKeyId: data.AccessKeyId,
                                 accessKeySecret: data.AccessKeySecret,
                                 stsToken: data.SecurityToken,
-                                bucket: 'gamecircle-video'
+                                bucket: data.bucket
                             });
                             var date = new Date();
                             t.fileOssName = 'sinaVr/' + date.getFullYear()+ '' + (date.getMonth()+1) + date.getDate() + '/'+t.name;
@@ -2366,11 +2366,11 @@ angular.module("nodercms", ["ngAnimate", "ipCookie", "ui.router", "ngFileUpload"
                 }).then(function (t) {
                     $.get('/api/aly',function(data){
                         var client = new OSS.Wrapper({
-                            region: 'oss-cn-beijing',
+                            region: data.region,
                             accessKeyId: data.AccessKeyId,
                             accessKeySecret: data.AccessKeySecret,
                             stsToken: data.SecurityToken,
-                            bucket: 'gamecircle-video'
+                            bucket: data.bucket
                         });
                         var date = new Date();
                         e.thumbnail.file.fileOssName = 'sinaVr/' + date.getFullYear()+ '' + (date.getMonth()+1) + date.getDate() + '/'+e.thumbnail.file.name;

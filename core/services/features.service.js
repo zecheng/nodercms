@@ -4,7 +4,7 @@ var cache = require('../../lib/cache.lib');
 var modelsModel = require('../models/models.model');
 var featuresModel = require('../models/features.model');
 var mediaModel = require('../models/media.model');
-
+var cdnUrl = require('../../config/extensions.config').cdnUrl;
 /**
  * 单条推荐模型
  * @param {Object} options
@@ -25,7 +25,7 @@ exports.one = function (options, callback) {
 
   featuresModel.findById(_id)
     .select('model sort title url thumbnail media extensions')
-    .populate('thumbnail', 'fileName description date src')
+    .populate('thumbnail', 'fileName description date src fileOssName')
     .populate('media', 'fileName description date src')
     .exec(function (err, feature) {
       if (err) {
@@ -44,7 +44,7 @@ exports.one = function (options, callback) {
           medium.src = meiaSrc[index];
         });
       }
-
+      feature.thumbnail.src = cdnUrl + feature.thumbnail.fileOssName;
       callback(null, feature);
     });
 };
@@ -56,7 +56,7 @@ exports.one = function (options, callback) {
 exports.all = function (callback) {
   featuresModel.find({})
     .select('model sort title url thumbnail media extensions')
-    .populate('thumbnail', 'fileName description date src')
+    .populate('thumbnail', 'fileName description date src fileOssName')
     .populate('media', 'fileName description date src')
     .exec(function (err, features) {
       if (err) {
@@ -76,7 +76,7 @@ exports.all = function (callback) {
             medium.src = meiaSrc[index];
           });
         }
-
+        feature.thumbnail.src = cdnUrl + feature.thumbnail.fileOssName;
         return feature;
       });
 
