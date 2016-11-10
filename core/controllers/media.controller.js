@@ -176,8 +176,8 @@ exports.remove = function (req, res) {
 };
 //获取Aly临时Key
 exports.getKey=function(req,res){
-                mediaService.alikey(function(v){
-                res.status(200).json(v);
+  mediaService.alikey(function(v){
+          res.status(200).json(v);
       });
 
 };

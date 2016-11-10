@@ -17,10 +17,15 @@ module.exports = {
             accessKeyId:        process.env.NODE_AM_ACCESSKEYID_ENV,
             secretAccessKey:    process.env.NODE_AM_SECRETACCESSKEY_ENV,
             endpoint:           process.env.NODE_AM_ENDPOINT_ENV,
-            apiVersion:         process.env.NODE_AM_APIVERSION_ENV
+            apiVersion:         process.env.NODE_AM_APIVERSION_ENV,
+            bucket:             'video-sinavr',//process.env.NODE_AM_BRCKET_ENV,
+            region:             process.env.NODE_AS_REGION_ENV
         }],
     //临时文件地址
     tmp:'/tmp/',
-    ossUrl:'http://gamecircle-video.oss-cn-beijing.aliyuncs.com/',
-    cdnUrl:'http://video.youka.youmengchuangxiang.com/'
+    //上传文件
+    ossUrl:  process.env.NODE_ALY_OSS_UPLOAD,
+    //CND加速 上线前开启
+    // cdnUrl:  process.env.NODE_ALY_CND_URL,
+    cdnUrl:  process.env.NODE_ALY_OSS_UPLOAD,
 };
