@@ -31,6 +31,8 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
         scope.selectLimit = 0;
         scope.callback = null;
         scope.disabledUploadThumbnail = false;
+        /* scope.url = 'http://video.youka.youmengchuangxiang.com/'; */
+        scope.url = 'http://video-sinavr.oss-cn-beijing.aliyuncs.com/';
 
         /**
          * 检查是否达到选择个数限制及禁用选择
@@ -157,7 +159,6 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
 
             _.map(data, function (medium) {
               var fileNameLast = _.get(medium.fileName.match(/^.+\.(\w+)$/), 1);
-
               var _medium = {
                 file: null,
                 fileName: medium.fileName,
@@ -183,7 +184,54 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
             });
           });
         } getMedia();
+        /**
+         * 文件MD5
+         */
+        scope.calculateMD5Hash = function (file, bufferSize) {
+          var def = Q.defer();
 
+          var fileReader = new FileReader();
+          var fileSlicer = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice;
+          var hashAlgorithm = new SparkMD5();
+          var bufferSize = Math.pow(1024, 2) * 1000;
+          var totalParts = Math.ceil(file.size / bufferSize);
+          var currentPart = 0;
+          var startTime = new Date().getTime();
+
+          fileReader.onload = function(e) {
+            currentPart += 1;
+
+            def.notify({
+              currentPart: currentPart,
+              totalParts: totalParts
+            });
+
+            var buffer = e.target.result;
+            hashAlgorithm.appendBinary(buffer);
+
+            if (currentPart < totalParts) {
+              processNextPart();
+              return;
+            }
+
+            def.resolve({
+              hashResult: hashAlgorithm.end(),
+              duration: new Date().getTime() - startTime
+            });
+          };
+
+          fileReader.onerror = function(e) {
+            def.reject(e);
+          };
+
+          function processNextPart() {
+            var start = currentPart * bufferSize;
+            var end = Math.min(start + bufferSize, file.size);
+            fileReader.readAsBinaryString(fileSlicer.call(file, start, end));
+          }
+          processNextPart();
+          return def.promise;
+        };
         /**
          * 上传媒体
          */
@@ -193,7 +241,8 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
             Upload.dataUrl(file).then(function (blob) {
 
               var fileNameLast = _.get(file.name.match(/^.+\.(\w+)$/), 1);
-
+              /* 上传文件路径 */
+              file.src =scope.url + file.name;
               var medium = {
                 file: blob,
                 fileName: file.name,
@@ -218,25 +267,51 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
           });
 
           async.eachLimit(files, 3, function (file, callback) {
+
+            /* 获取文件后缀 */
+            var fileNameLast = _.get(file.name.match(/^.+\.(\w+)$/), 1);
             Upload.upload({
               url: '/api/media',
               data: { file: file }
             }).then(function (res) {
-              var data = res.data;
 
-              _.map(scope.media, function (medium) {
-                Upload.dataUrl(file).then(function (blob) {
-                  if (blob === medium.file) {
-                    medium._id = data._id;
-                    medium.src = data.src;
-                    medium.uploadStatus = 'success';
-                  }
-                });
-              });
+              /* OSS上传 */
+              var result_id = res.data._id;
+              scope.calculateMD5Hash(file).then(
+                  function(result) {
+                    $.get('/api/aly',function(data){
+                      var client = new OSS.Wrapper({
+                        region: data.region,
+                        accessKeyId: data.AccessKeyId,
+                        accessKeySecret: data.AccessKeySecret,
+                        stsToken: data.SecurityToken,
+                        bucket: data.bucket
+                      });
+                      file.fileOssName =  result.hashResult+ '.'+fileNameLast;
+                      client.multipartUpload(file.fileOssName, file).then(function (res) {
+                        var ossUpdate = {fileName:file.name,fileOssName:file.fileOssName,fileOssUrl:file.fileOssName,src:res.url};
 
-              getMedia();
+                        _.map(scope.media, function (medium) {
+                          Upload.dataUrl(file).then(function (blob) {
+                            if (blob === medium.file) {
+                              medium._id = result_id;
+                              medium.src = scope.url + file.fileOssName;
+                              medium.uploadStatus = 'success';
+                            }
+                          });
+                        });
+                        getMedia();
+                        $.ajax({
+                          url: "/api/media/" + result_id,
+                          type: 'PUT',
+                          data:ossUpdate
+                        });
+                      });
+                    });
+                  });
 
               callback(null);
+
             }, function (res) {
               callback(res);
             });

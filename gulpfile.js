@@ -75,7 +75,10 @@ var vendorSrcJS = [
   './src/admin/vendor/bootstrap-markdown-2.10.0/js/bootstrap-markdown.js',
   './src/admin/vendor/bootstrap-markdown-2.10.0/js/bootstrap-markdown.zh.js',
   './src/admin/vendor/bootstrap-datepicker-1.6.1/js/bootstrap-datepicker.js',
-  './src/admin/vendor/bootstrap-datepicker-1.6.1/js/bootstrap-datepicker.zh-CN.js'
+  './src/admin/vendor/bootstrap-datepicker-1.6.1/js/bootstrap-datepicker.zh-CN.js',
+  './src/admin/vendor/q-1.4.1/q.js',
+  './src/admin/vendor/spark-md5-2.0.2/spark-md5.js',
+  './src/admin/vendor/aliyun-oss-sdk-4.3.0/aliyun-oss-sdk-4.3.0.js'
 ];
 
 /**

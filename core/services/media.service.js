@@ -120,7 +120,6 @@ exports.list = function (options, callback) {
  * @param {Function} callback
  */
 exports.save = function (options, callback) {
-
   if (options._id && !options.data) {
     var err = {
       type: 'system',
@@ -219,14 +218,13 @@ exports.save = function (options, callback) {
       // 存储进数据库
       saveModel: ['formParse', function (callback, results) {
         var date = new Date();
-        fileOssName = 'sinaVr/' + date.getFullYear()+ '' + (date.getMonth()+1) + date.getDate() + '/'+results.formParse.name;
         var medium = {
           type: results.formParse.type,
           fileName: results.formParse.name,
           date: results.formParse.lastModifiedDate,
           size: results.formParse.size,
-          fileOssName: fileOssName,
-          fileOssPath: fileOssName,
+          fileOssName: results.formParse.name,
+          fileOssPath: results.formParse.name,
           isDelete:1
         };
 

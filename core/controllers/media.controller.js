@@ -52,6 +52,7 @@ exports.list = function (req, res) {
  * @param {Object} res
  */
 exports.create = function (req, res) {
+
   req.checkHeaders({
     'content-type': {
       notEmpty: {

@@ -10,6 +10,7 @@ var contentsService = require('../services/contents.service');
  * @param {Object} res
  */
 exports.one = function (req, res) {
+  console.log(req);
   req.checkParams({
     'content': {
       notEmpty: {
