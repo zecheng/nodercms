@@ -450,7 +450,6 @@ exports.update = function (req, res) {
     data.tags = req.body.tags || [];
     data.extensions = req.body.extensions || {};
   }
-
   var query = {
     data: data
   };

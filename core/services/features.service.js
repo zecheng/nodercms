@@ -26,14 +26,14 @@ exports.one = function (options, callback) {
   featuresModel.findById(_id)
     .select('model sort title url thumbnail media extensions')
     .populate('thumbnail', 'fileName description date src fileOssName')
-    .populate('media', 'fileName description date src')
+    .populate('media', 'fileName description date src fileOssName')
     .exec(function (err, feature) {
       if (err) {
         err.type = 'database';
         return callback(err);
       }
 
-      if (feature.thumbnail) var thumbnailSrc = feature.thumbnail.src;
+      if (feature.thumbnail) var thumbnailSrc = cdnUrl + feature.thumbnail.fileOssName; //feature.thumbnail.src;
       if (!_.isEmpty(feature.media)) var meiaSrc = _.map(feature.media, 'src');
 
       feature = feature.toObject();
@@ -41,10 +41,9 @@ exports.one = function (options, callback) {
       if (feature.thumbnail) feature.thumbnail.src = thumbnailSrc;
       if (!_.isEmpty(feature.media)) {
         _.forEach(feature.media, function (medium, index) {
-          medium.src = meiaSrc[index];
+          medium.src = cdnUrl +  medium.fileOssName ; //meiaSrc[index];
         });
       }
-      feature.thumbnail.src = cdnUrl + feature.thumbnail.fileOssName;
       callback(null, feature);
     });
 };
@@ -57,7 +56,7 @@ exports.all = function (callback) {
   featuresModel.find({})
     .select('model sort title url thumbnail media extensions')
     .populate('thumbnail', 'fileName description date src fileOssName')
-    .populate('media', 'fileName description date src')
+    .populate('media', 'fileName description date src fileOssName')
     .exec(function (err, features) {
       if (err) {
         err.type = 'database';
@@ -65,7 +64,7 @@ exports.all = function (callback) {
       }
 
       features = _.map(features, function (feature) {
-        if (feature.thumbnail) var thumbnailSrc = feature.thumbnail.src;
+        if (feature.thumbnail) var thumbnailSrc = cdnUrl + feature.thumbnail.fileOssName; //feature.thumbnail.src;
         if (!_.isEmpty(feature.media)) var meiaSrc = _.map(feature.media, 'src');
 
         feature = feature.toObject();
@@ -73,10 +72,9 @@ exports.all = function (callback) {
         if (feature.thumbnail) feature.thumbnail.src = thumbnailSrc;
         if (!_.isEmpty(feature.media)) {
           _.forEach(feature.media, function (medium, index) {
-            medium.src = meiaSrc[index];
+            medium.src = cdnUrl +  medium.fileOssName ; //meiaSrc[index];
           });
         }
-        feature.thumbnail.src = cdnUrl + feature.thumbnail.fileOssName;
         return feature;
       });
 
@@ -103,7 +101,6 @@ exports.save = function (options, callback) {
 
   var _id = options._id;
   var data = options.data;
-
   if (_id) {
     async.auto({
       feature: function (callback) {

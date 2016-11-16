@@ -165,8 +165,9 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
                 fileNameLast: fileNameLast,
                 isImage: false,
                 description: medium.description,
-                src: medium.src,
+                src: scope.url + medium.src,
                 _id: medium._id,
+                fileOssName: medium.fileOssName,
                 uploadStatus: 'success',
                 active: false,
                 edited: false
@@ -179,7 +180,6 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
                 case 'gif':
                   _medium.isImage = true;
               }
-
               scope.mediaStore.push(_medium);
             });
           });
@@ -242,7 +242,7 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
 
               var fileNameLast = _.get(file.name.match(/^.+\.(\w+)$/), 1);
               /* 上传文件路径 */
-              file.src =scope.url + file.name;
+              // file.src =scope.url + file.name;
               var medium = {
                 file: blob,
                 fileName: file.name,
@@ -289,14 +289,16 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
                       });
                       file.fileOssName =  result.hashResult+ '.'+fileNameLast;
                       client.multipartUpload(file.fileOssName, file).then(function (res) {
-                        var ossUpdate = {fileName:file.name,fileOssName:file.fileOssName,fileOssUrl:file.fileOssName,src:res.url};
+                        var ossUpdate = {fileName:file.name,fileOssName:file.fileOssName,fileOssUrl:file.fileOssName,src:file.fileOssName};
 
                         _.map(scope.media, function (medium) {
                           Upload.dataUrl(file).then(function (blob) {
                             if (blob === medium.file) {
                               medium._id = result_id;
                               medium.src = scope.url + file.fileOssName;
+                              // medium.src = file.fileOssName;
                               medium.uploadStatus = 'success';
+                              medium.fileOssName = file.fileOssName;
                             }
                           });
                         });
@@ -394,11 +396,10 @@ angular.module('directives').directive('ndMediaSelect',  ['$templateCache', '$ti
               }
             }
           });
-
           var activeMedia = _(scope.media)
             .filter(function (medium) { return medium.active })
             .map(function (medium) {
-              return _.pick(medium, ['_id', 'description', 'fileName', 'fileNameLast', 'isImage', 'src']);
+              return _.pick(medium, ['_id', 'description', 'fileName', 'fileNameLast', 'isImage', 'src','fileOssName']);
             })
             .value();
 

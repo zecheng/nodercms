@@ -92,7 +92,7 @@ exports.list = function (options, callback) {
             return callback(err);
           }
           media = _.map(media, function (medium) {
-            var src = cdnUrl + medium.fileOssName;
+            var src =  medium.fileOssName;
             medium = medium.toObject();
             medium.src = src;
 

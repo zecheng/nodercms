@@ -19,7 +19,6 @@ angular.module('controllers').controller('featuresChange', ['$scope', '$state','
     $scope.model = {};
     $scope.media = [];
     $scope.disabledExtMediaAdd = {};
-
     /**
      * 读取当前推荐模型和推荐
      */
@@ -64,8 +63,8 @@ angular.module('controllers').controller('featuresChange', ['$scope', '$state','
         $scope.title = feature.title;
         $scope.url = feature.url;
         $scope.extensions = feature.extensions;
-
         if (feature.thumbnail) {
+
           $scope.thumbnail._id = feature.thumbnail._id;
           $scope.thumbnail.uploadStatus = 'success';
           $scope.thumbnail.croppedImage = feature.thumbnail.src;
@@ -145,12 +144,10 @@ angular.module('controllers').controller('featuresChange', ['$scope', '$state','
         sort: $scope.sort,
         title: $scope.title,
       };
-
       if ($scope.url) feature.url = $scope.url;
       if ($scope.thumbnail._id) feature.thumbnail = $scope.thumbnail._id;
       if (!_.isEmpty($scope.media)) feature.media = _.map($scope.media, '_id');
       if (!_.isEmpty($scope.extensions)) feature.extensions = $scope.extensions;
-
       if ($stateParams.feature) {
         $http.put('/api/features/' + $stateParams.feature, feature)
           .then(function () {
